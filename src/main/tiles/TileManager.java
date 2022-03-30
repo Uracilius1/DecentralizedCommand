@@ -33,6 +33,7 @@ public class TileManager {
 	int[][] currentMap;
 	int size = -1;
 	int log10 = 0;
+
 	public TileManager(GamePanel gp) {
 		this.gp = gp;
 		tile = new Tile[10];
@@ -45,7 +46,7 @@ public class TileManager {
 			e.printStackTrace();
 		}
 		System.out.println(currentMap);
-		
+
 	}
 
 	private void getTileImage() {
@@ -69,11 +70,10 @@ public class TileManager {
 	// adapted.
 	public void loadMap(String map) throws IOException {
 		File initialFile = new File(map);
-	    InputStream targetStream = new FileInputStream(initialFile);
-	    
+		InputStream targetStream = new FileInputStream(initialFile);
+
 		BufferedReader buffer = new BufferedReader(new InputStreamReader(targetStream));
-		
-		
+
 		String line;
 		int row = 0;
 
@@ -95,84 +95,158 @@ public class TileManager {
 	}
 
 	public void drawMap(Graphics2D g2, String map) {
-        try {
-        	int worldX = 0;
-            int worldY = 0;
+		try {
+			int worldX = 0;
+			int worldY = 0;
 
-            int screenX;
-            int screenY;
-            
-                for (int i = 0; i < currentMap.length; i++) {
-                    
-                	worldX = i * gp.tileSize;
-                    screenX = worldX - gp.pl.worldX + gp.pl.screenX;
-      
-                    for (int j = 0; j < currentMap[i].length; j++) {
-                        worldY = j * gp.tileSize;
-                        screenY = worldY - gp.pl.worldY + gp.pl.screenY;
+			int screenX;
+			int screenY;
 
-                        if (worldX +gp.tileSize> gp.pl.worldX - gp.pl.screenX
-                                && worldX - gp.tileSize < gp.pl.worldX + gp.pl.screenX
-                                && worldY +gp.tileSize> gp.pl.worldY - gp.pl.screenY
-                                && worldY-gp.tileSize < gp.pl.worldY + gp.pl.screenY) {
-                            g2.drawImage(tile[currentMap[j][i]].image, screenX, screenY, gp.tileSize, gp.tileSize, null);
-                        }
-                    }
-                }
-            
-        }catch(Exception exc)
-	{
-		System.out.println(exc);
+			for (int i = 0; i < currentMap.length; i++) {
+
+				worldX = i * gp.tileSize;
+				screenX = worldX - gp.pl.worldX + gp.pl.screenX;
+
+				for (int j = 0; j < currentMap[i].length; j++) {
+					worldY = j * gp.tileSize;
+					screenY = worldY - gp.pl.worldY + gp.pl.screenY;
+
+					if (worldX + gp.tileSize > gp.pl.worldX - gp.pl.screenX
+							&& worldX - gp.tileSize < gp.pl.worldX + gp.pl.screenX
+							&& worldY + gp.tileSize > gp.pl.worldY - gp.pl.screenY
+							&& worldY - gp.tileSize < gp.pl.worldY + gp.pl.screenY) {
+						g2.drawImage(tile[currentMap[j][i]].image, screenX, screenY, gp.tileSize, gp.tileSize, null);
+					}
+				}
+			}
+
+		} catch (Exception exc) {
+			System.out.println(exc);
+		}
+
 	}
 
+	public boolean getTileCollision(int row, int column) {
+		return tile[currentMap[column + 1][row]].collision;
 	}
-	
 
-public boolean getTileCollision(int row, int column) {
-	return tile[currentMap[column+1][row]].collision;
-}
-
-	public ArrayList<int[]> fixPathing(int currentX, int currentY, int finalX, int finalY, List<int[]> path) {
+	public List<int[]> fixPathing(int currentX, int currentY, int finalX, int finalY) {
 		int moveX = finalX - currentX;
-			while(findPathBeforeCollisionX(currentX, currentY, moveX)) {
+		int moveY = finalY - currentY;
+		int signY = (int) Math.signum(moveY);
+		int signX = (int) Math.signum(moveX);
+		int ITERATIONS = 0;
+		List <int[]> path = new ArrayList<int[]>();
+	
+		System.out.println(currentX+" and "+currentY);
+		
+		path = findPathBeforeCollisionX(path, moveX, currentX, currentY);
+		int[] placeholder = new int[] {-1, -1};
+		//Iteratively try to get out of the trap.
+		
+			while(Arrays.equals(path.get(path.size()-1),placeholder)&&ITERATIONS<20) {
+				System.out.println("Inside loop");
+				ITERATIONS++;
+				path.remove(path.size()-1);
+				currentX =path.get(path.size()-1)[0];
+				currentY = path.get(path.size()-1)[1];
+				if(!getTileCollision(currentX, currentY+signY)) {
+					path.add(new int[]{currentX, currentY+signY});
+					currentY = currentY+signY;
+					System.out.println("Moving up to avoid an obstacle");
+					path = findPathBeforeCollisionX(path, moveX, currentX, currentY+signY);
+				}
+				else if(!getTileCollision(currentX, currentY-signY)) {
+					path.add(new int[]{currentX, currentY-signY});
+					System.out.println("Moving down to avoid an obstacle");
+					path = findPathBeforeCollisionX(path, moveX, currentX, currentY-signY);
+				}
+				else if(!getTileCollision(currentX-signX, currentY+signY)) {
+					path.add(new int[]{currentX-signX, currentY+signY});
+					System.out.println("Moving back and up to avoid an obstacle");
+					currentY=currentY+signY;
+					currentX=currentX-signX;
+					path = findPathBeforeCollisionX(path, moveX, currentX-signX, currentY);
+				}
+				else if(!getTileCollision(currentX-signX, currentY-signY)) {
+					path.add(new int[]{currentX-signX, currentY-signY});
+					System.out.println("Moving back and down to avoid an obstacle");
+					path = findPathBeforeCollisionX(path, moveX, currentX-signX, currentY-signY);
+				}
 				
 			}
-			return "None";
+			if(path.get(path.size()-1)[0]==-1) {
+				currentX = path.get(path.size()-2)[0];
+			}
+			path = findPathBeforeCollisionY(path, moveY, currentX, currentY);
+
+			while(Arrays.equals(path.get(path.size()-1),placeholder)) {
+				
+				path.remove(path.size()-1);
+				currentX =path.get(path.size()-1)[0];
+				currentY = path.get(path.size()-1)[1];
+				
+				if(!getTileCollision(currentX+signX, currentY)) {
+					System.out.println("Moving up to avoid an obstacle");
+					path.add(new int[]{currentX+signX, currentY});
+					path = findPathBeforeCollisionY(path, moveY, currentX+signX, currentY);
+				}
+				else if(!getTileCollision(currentX-signX, currentY)) {
+
+					System.out.println("Moving up to avoid an obstacle");
+					path.add(new int[]{currentX-signX, currentY});
+					path = findPathBeforeCollisionY(path, moveY, currentX-signX, currentY);
+				}
+				else if(!getTileCollision(currentX-signX, currentY-signY)) {
+
+					System.out.println("Moving up to avoid an obstacle");
+					path.add(new int[]{currentX-signX, currentY+signY});
+					path = findPathBeforeCollisionY(path, moveY, currentX-signX, currentY-signY);
+				}
+				else if(!getTileCollision(currentX+signX, currentY-signY)) {
+
+					System.out.println("Moving up to avoid an obstacle");
+					path.add(new int[]{currentX-signX, currentY-signY});
+					path = findPathBeforeCollisionY(path, moveY, currentX+signX, currentY-signY);
+				}
+				}
+			return path;
+			
+			
 		}
-		
-	
-	
-	public List<int[]> findPathBeforeCollisionX(List<int[]> previousPath, int moveX, int currentX, int currentY) {
-		//Move on the x axis until hit obstacle or reached path.
-		int signX = (int) Math.signum(currentX);
-		List <int[]> path = new ArrayList<int[]>();
-		for(int i = 0; i<moveX; i++) {
-			currentX=currentX+signX;
-			int[] addendum = {currentX, currentY};
+
+	public List<int[]> findPathBeforeCollisionX(List<int[]> path, int moveX, int currentX, int currentY) {
+		// Move on the x axis until hit obstacle or reached path.
+		int signX = (int) Math.signum(moveX);
+		for (int i = 0; i < Math.abs(moveX); i++) {
+			currentX = currentX + signX;
+			
+			int[] addendum = { currentX, currentY };
 			path.add(addendum);
-			if(getTileCollision(currentX, currentY)) {
-				path.add(new int[] {-1, -1});
+			if (getTileCollision(currentX, currentY)) {
+				path.add(new int[] { -1, -1 });
 				return path;
 			}
 		}
 		return path;
-		
-		}
-	public int findCollisionOnPathY(int moveY, int currentX, int currentY) {
-		//Move on the x axis until hit obstacle or reached path.
-		int signY = (int) Math.signum(moveY);
-		
-		for(int i = 0; i<moveY; i++) {
-			currentY=currentY+signY;
-			if(getTileCollision(currentX, currentY)) {
-				return currentY;
-			}
-		}
-		return -1;
-		
-		}
-	
-		
-		
+
 	}
 
+	public List<int[]> findPathBeforeCollisionY(List<int[]> path, int moveY, int currentX, int currentY) {
+		// Move on the x axis until hit obstacle or reached path.
+		int signY = (int) Math.signum(moveY);
+		for (int i = 0; i < Math.abs(moveY); i++) {
+			System.out.println(currentX+"And"+currentY);
+			currentY = currentY + signY;
+			int[] addendum = { currentX, currentY };
+			path.add(addendum);
+			if (getTileCollision(currentX, currentY)) {
+				path.add(new int[] { -1, -1 });
+				return path;
+			}
+		}
+		return path;
+
+	}
+
+}

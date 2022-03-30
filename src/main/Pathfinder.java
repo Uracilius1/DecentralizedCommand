@@ -1,5 +1,8 @@
 package main;
 
+import java.util.Arrays;
+import java.util.List;
+
 import entity.Entity;
 import main.tiles.TileManager;
 
@@ -15,29 +18,14 @@ public class Pathfinder {
     	int currentTileCoordinateX = (entity.worldX+(gp.tileSize/2))/gp.tileSize;
 	    int currentTileCoordinateY = (entity.worldY-(gp.tileSize/2))/gp.tileSize;
         
-    	String directions = "";
-    	
-    	int deltaX = (x+(gp.tileSize/2))/gp.tileSize-currentTileCoordinateX;
-    	if(deltaX<0) {
-    		directions+="l="+Math.abs(deltaX);
-    		directions+=" ";
-    	}
-    	else if(deltaX>0) {
-    		directions+="r="+Math.abs(deltaX);
-    		directions+=" ";
-    	}
-    	
-    	int deltaY = (y+(gp.tileSize/2))/gp.tileSize-currentTileCoordinateY;
-    	if(deltaY<0) {
-    		directions+="u="+Math.abs(deltaY);
-    		directions+=" ";
-    	}
-    	else if(deltaY>0) {
-    		directions+="d="+Math.abs(deltaY);
-    		directions+=" ";
-    	}
-    	System.out.println(directions);
-    	return directions;
+	    int finalTileCoordinateX = (x-(gp.tileSize/2))/gp.tileSize;
+	    int finalTileCoordinateY = (y-(gp.tileSize/2))/gp.tileSize;
+	    System.out.println("CurrentTiles are:"+ currentTileCoordinateX+" And "+currentTileCoordinateY);
+	    System.out.println("FinalTiles are:"+ finalTileCoordinateX+" And "+finalTileCoordinateY);
+	    List<int[]> path = tm.fixPathing(currentTileCoordinateX, currentTileCoordinateY, finalTileCoordinateX, finalTileCoordinateY);
+		System.out.println(Arrays.deepToString(path.toArray()));
+		
+	    return "Nothing";
     	
     }
 
