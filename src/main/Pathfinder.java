@@ -14,7 +14,7 @@ public class Pathfinder {
         this.tm = tm;
     }
     
-    public String findTilePath(Entity entity, int x, int y){
+    public List<Point> findTilePath(Entity entity, int x, int y){
     	int currentTileCoordinateX = (entity.worldX+(gp.tileSize/2))/gp.tileSize;
 	    int currentTileCoordinateY = (entity.worldY-(gp.tileSize/2))/gp.tileSize;
         
@@ -22,10 +22,16 @@ public class Pathfinder {
 	    int finalTileCoordinateY = (y-(gp.tileSize/2))/gp.tileSize;
 	    System.out.println("CurrentTiles are:"+ currentTileCoordinateX+" And "+currentTileCoordinateY);
 	    System.out.println("FinalTiles are:"+ finalTileCoordinateX+" And "+finalTileCoordinateY);
-	    List<int[]> path = tm.fixPathing(currentTileCoordinateX, currentTileCoordinateY, finalTileCoordinateX, finalTileCoordinateY);
-		System.out.println(Arrays.deepToString(path.toArray()));
+	    Point start=new Point(currentTileCoordinateX, currentTileCoordinateY, null);
+	    Point finish=new Point(finalTileCoordinateX, finalTileCoordinateY, null);
+	    List<Point> path = tm.FindPath(start, finish);
+	    if (path != null) {
+            for (Point point : path) {
+                System.out.println(point);
+            }
+        }
 		
-	    return "Nothing";
+	    return path;
     	
     }
 

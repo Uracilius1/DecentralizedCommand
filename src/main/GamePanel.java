@@ -12,6 +12,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 import javax.swing.JPanel;
+
+import entity.Entity;
 import entity.Player;
 import main.tiles.TileManager;
 
@@ -40,14 +42,22 @@ public class GamePanel extends JPanel implements Runnable {
     
     TileManager tileM = new TileManager(this);
     public Player pl = new Player(this);
+    public Entity npc[] = new Entity[30];
     
     Pathfinder pf = new Pathfinder(this, tileM);
+    
+    Sound sound = new Sound();
     
     public CollisionChecker cChecker = new CollisionChecker(this, tileM);
     
     KeyHandler keyH = new KeyHandler();
     Thread gameThread;  
     int playerSpeed = 2;
+    
+    
+    public int gameState;
+    public final int playState = 1;
+    public final int pauseState = 2;
     
     public GamePanel(){
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
@@ -64,6 +74,9 @@ public class GamePanel extends JPanel implements Runnable {
             
            });
         }
+    public void setupGame() {
+    	gameState=1;
+    }
 
     public void startGameThread() {
         gameThread = new Thread(this);
@@ -104,7 +117,7 @@ public void update(){
         if (keyH.upPressed==true){
         	pl.direction="up";
         	pl.worldY -= pl.speed;
-            System.out.println(pl.worldY);
+        	playSoundEffect(0);
         }
         else if (keyH.downPressed==true){
         	pl.direction="down";
@@ -122,9 +135,10 @@ public void update(){
         	pl.worldX += pl.speed;
             
         }
+        }
         
        
-    }
+    
     @Override
     public void paintComponent(Graphics g){
         
@@ -141,8 +155,14 @@ public void update(){
         g2.dispose();
             
     }
-    public void paintOnce(Graphics g){
-        
+    public void playMusic(int i) {
+    	sound.setFile(i);
+    	sound.play();
+    	sound.loop();
+    }
+    public void playSoundEffect(int i) {
+    	sound.setFile(i);
+    	sound.play();
     }
 
     

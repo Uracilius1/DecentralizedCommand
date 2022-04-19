@@ -5,6 +5,7 @@
 package main.tiles;
 
 import java.awt.Graphics2D;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,10 +16,17 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Scanner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import javax.imageio.ImageIO;
 import main.GamePanel;
+import main.Point;
 
 /**
  *
@@ -130,123 +138,141 @@ public class TileManager {
 		return tile[currentMap[column + 1][row]].collision;
 	}
 
-	public List<int[]> fixPathing(int currentX, int currentY, int finalX, int finalY) {
-		int moveX = finalX - currentX;
-		int moveY = finalY - currentY;
-		int signY = (int) Math.signum(moveY);
-		int signX = (int) Math.signum(moveX);
-		int ITERATIONS = 0;
-		List <int[]> path = new ArrayList<int[]>();
+//	public List<int[]> fixPathing(int currentX, int currentY, int finalX, int finalY) {
+//		
+//		
+//		int[] finalCoords = new int[]{finalX, finalY,0};
+//		int[] startingCoords = new int[] {currentX, currentY, 0};
+//		List <int[]> path = new ArrayList<int[]>();
+//		
+//		path.add(startingCoords);
+//		int cost = 0;
+//		int iterations=0;
+//		while(!path.contains(finalCoords)&&iterations<100) {
+//			int i=0;
+//			
+//	        while (i<10) {
+//	        	
+//	        	path = getSurroundingTiles(path, path.get(i), cost);
+//	        	
+//	        	
+//	        	i++;
+//	        }
+//
+//        	path = new ArrayList<>(new HashSet<>(path));
+//	        iterations++;
+//	        cost++;
+//
+//	        
+//
+//		}
+//
+//		System.out.println(Arrays.deepToString(path.toArray()));
+//		return path;
+//			
+//			
+//		}
 	
-		System.out.println(currentX+" and "+currentY);
+
+	 public List<Point> FindNeighbors(Point point) {
+	        List<Point> neighbors = new ArrayList<>();
+	        Point up = point.offset(0,  1);
+	        Point down = point.offset(0,  -1);
+	        Point left = point.offset(-1, 0);
+	        Point right = point.offset(1, 0);
+	        if (!getTileCollision(up.x,up.y)) neighbors.add(up);
+	        if (!getTileCollision(down.x,down.y)) neighbors.add(down);
+	        if (!getTileCollision(left.x,left.y)) neighbors.add(left);
+	        if (!getTileCollision(right.x,right.y)) neighbors.add(right);
+	        return neighbors;
+	    }
+
+	 public List<Point> FindPath(Point start, Point end) {
+	        boolean finished = false;
+	        List<Point> used = new ArrayList<>();
+	        used.add(start);
+	        while (!finished) {
+	            List<Point> newOpen = new ArrayList<>();
+	            for(int i = 0; i < used.size(); ++i){
+	                Point point = used.get(i);
+	                for (Point neighbor : FindNeighbors(point)) {
+	                    if (!used.contains(neighbor) && !newOpen.contains(neighbor)) {
+	                        newOpen.add(neighbor);
+	                    }
+	                }
+	            }
+
+	            for(Point point : newOpen) {
+	                used.add(point);
+	                if (end.equals(point)) {
+	                    finished = true;
+	                    break;
+	                }
+	            }
+
+	            if (!finished && newOpen.isEmpty())
+	                return null;
+	        }
+
+	        List<Point> path = new ArrayList<>();
+	        Point point = used.get(used.size() - 1);
+	        while(point.getPrevious()!= null) {
+	            path.add(0, point);
+	            point = point.previous;
+	        }
+	        return path;
+	    }
+	 
+//	public List<int[]> getSurroundingTiles(int[] coords) {
+//		// Move on thes x axis until hit obstacle or reached path.
+//		int x = coords[0];
+//		int y = coords[1];
+//		List <int[]> path = new ArrayList<int[]>();
+//		int[] addendum = new int[] {x, y};
+//		if(!getTileCollision(x-1, y)) {
+//			addendum[0]=x-1;
+//			addendum[1]=y;
+//			path.add(addendum);
+//			}
+//		if(!getTileCollision(x+1, y)) {
+//			addendum[0]=x+1;
+//			addendum[1]=y;
+//			path.add(addendum);
+//			}
+//		if(!getTileCollision(x, y-1)) {
+//			addendum[0]=x;
+//			addendum[1]=y-1;
+//			path.add(addendum);
+//			}
+//		if(!getTileCollision(x, y+1)) {
+//			addendum[0]=x;
+//			addendum[1]=y+1;
+//			path.add(addendum);
+//			}
+//		System.out.println(x);
+//		System.out.println(y);
+//		System.out.println(!getTileCollision(y, x-1));
+//		return path;
+//		}
+//		
 		
-		path = findPathBeforeCollisionX(path, moveX, currentX, currentY);
-		int[] placeholder = new int[] {-1, -1};
-		//Iteratively try to get out of the trap.
-		
-			while(Arrays.equals(path.get(path.size()-1),placeholder)&&ITERATIONS<20) {
-				System.out.println("Inside loop");
-				ITERATIONS++;
-				path.remove(path.size()-1);
-				currentX =path.get(path.size()-1)[0];
-				currentY = path.get(path.size()-1)[1];
-				if(!getTileCollision(currentX, currentY+signY)) {
-					path.add(new int[]{currentX, currentY+signY});
-					currentY = currentY+signY;
-					System.out.println("Moving up to avoid an obstacle");
-					path = findPathBeforeCollisionX(path, moveX, currentX, currentY+signY);
-				}
-				else if(!getTileCollision(currentX, currentY-signY)) {
-					path.add(new int[]{currentX, currentY-signY});
-					System.out.println("Moving down to avoid an obstacle");
-					path = findPathBeforeCollisionX(path, moveX, currentX, currentY-signY);
-				}
-				else if(!getTileCollision(currentX-signX, currentY+signY)) {
-					path.add(new int[]{currentX-signX, currentY+signY});
-					System.out.println("Moving back and up to avoid an obstacle");
-					currentY=currentY+signY;
-					currentX=currentX-signX;
-					path = findPathBeforeCollisionX(path, moveX, currentX-signX, currentY);
-				}
-				else if(!getTileCollision(currentX-signX, currentY-signY)) {
-					path.add(new int[]{currentX-signX, currentY-signY});
-					System.out.println("Moving back and down to avoid an obstacle");
-					path = findPathBeforeCollisionX(path, moveX, currentX-signX, currentY-signY);
-				}
-				
-			}
-			if(path.get(path.size()-1)[0]==-1) {
-				currentX = path.get(path.size()-2)[0];
-			}
-			path = findPathBeforeCollisionY(path, moveY, currentX, currentY);
-
-			while(Arrays.equals(path.get(path.size()-1),placeholder)) {
-				
-				path.remove(path.size()-1);
-				currentX =path.get(path.size()-1)[0];
-				currentY = path.get(path.size()-1)[1];
-				
-				if(!getTileCollision(currentX+signX, currentY)) {
-					System.out.println("Moving up to avoid an obstacle");
-					path.add(new int[]{currentX+signX, currentY});
-					path = findPathBeforeCollisionY(path, moveY, currentX+signX, currentY);
-				}
-				else if(!getTileCollision(currentX-signX, currentY)) {
-
-					System.out.println("Moving up to avoid an obstacle");
-					path.add(new int[]{currentX-signX, currentY});
-					path = findPathBeforeCollisionY(path, moveY, currentX-signX, currentY);
-				}
-				else if(!getTileCollision(currentX-signX, currentY-signY)) {
-
-					System.out.println("Moving up to avoid an obstacle");
-					path.add(new int[]{currentX-signX, currentY+signY});
-					path = findPathBeforeCollisionY(path, moveY, currentX-signX, currentY-signY);
-				}
-				else if(!getTileCollision(currentX+signX, currentY-signY)) {
-
-					System.out.println("Moving up to avoid an obstacle");
-					path.add(new int[]{currentX-signX, currentY-signY});
-					path = findPathBeforeCollisionY(path, moveY, currentX+signX, currentY-signY);
-				}
-				}
-			return path;
-			
-			
-		}
-
-	public List<int[]> findPathBeforeCollisionX(List<int[]> path, int moveX, int currentX, int currentY) {
-		// Move on the x axis until hit obstacle or reached path.
-		int signX = (int) Math.signum(moveX);
-		for (int i = 0; i < Math.abs(moveX); i++) {
-			currentX = currentX + signX;
-			
-			int[] addendum = { currentX, currentY };
-			path.add(addendum);
-			if (getTileCollision(currentX, currentY)) {
-				path.add(new int[] { -1, -1 });
-				return path;
-			}
-		}
-		return path;
-
-	}
-
-	public List<int[]> findPathBeforeCollisionY(List<int[]> path, int moveY, int currentX, int currentY) {
-		// Move on the x axis until hit obstacle or reached path.
-		int signY = (int) Math.signum(moveY);
-		for (int i = 0; i < Math.abs(moveY); i++) {
-			System.out.println(currentX+"And"+currentY);
-			currentY = currentY + signY;
-			int[] addendum = { currentX, currentY };
-			path.add(addendum);
-			if (getTileCollision(currentX, currentY)) {
-				path.add(new int[] { -1, -1 });
-				return path;
-			}
-		}
-		return path;
-
-	}
+//
+//	public List<int[]> findPathBeforeCollisionY(List<int[]> path, int moveY) {
+//		// Move on the x axis until hit obstacle or reached path.
+//		int currentX = path.get(path.size()-1)[0];
+//		int currentY = path.get(path.size()-1)[1];
+//		int signY = (int) Math.signum(moveY);
+//		for (int i = 0; i < Math.abs(moveY); i++) {
+//			currentY = currentY + signY;
+//			int[] addendum = { currentX, currentY };
+//			path.add(addendum);
+//			if (getTileCollision(currentX, currentY)) {
+//				path.add(new int[] { -1, -1 });
+//				return path;
+//			}
+//		}
+//		return path;
+//
+//	}
 
 }
